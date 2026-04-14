@@ -92,6 +92,8 @@ pub struct LayoutBox {
     pub border: EdgeInsets,
     pub children: Vec<LayoutBox>,
     pub cached_size: Option<Size>,
+    pub url: Option<String>, // For <a> links
+    pub image_src: Option<String>, // For <img> tags
 }
 
 impl LayoutBox {
@@ -104,6 +106,8 @@ impl LayoutBox {
             border: EdgeInsets::default(),
             children: Vec::new(),
             cached_size: None,
+            url: None,
+            image_src: None,
         }
     }
 
@@ -209,6 +213,21 @@ fn build_recursive(
     let box_type = determine_box_type(node, &style);
     let mut lb = LayoutBox::new(box_type, style, idx);
     extract_box_model(&mut lb, ctx);
+
+    // Extract href from <a> tags
+    if let HtmlNode::Element { tag, attributes, .. } = node {
+        if tag.to_lowercase() == "a" {
+            if let Some(href) = attributes.get("href") {
+                lb.url = Some(href.clone());
+            }
+        }
+        // Extract src from <img> tags
+        if tag.to_lowercase() == "img" {
+            if let Some(src) = attributes.get("src") {
+                lb.image_src = Some(src.clone());
+            }
+        }
+    }
 
     if let HtmlNode::Element { children, .. } = node {
         for child in children {
