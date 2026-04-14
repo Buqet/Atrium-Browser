@@ -61,10 +61,11 @@ egui = { version = "0.31", optional = true }
 egui_dock = { version = "0.16", optional = true }
 egui_extras = { version = "0.31", optional = true }
 rfd = { version = "0.15", optional = true }
+image = { version = "0.25", optional = true, default-features = false, features = ["png", "jpeg", "gif"] }
 
 [features]
 default = ["custom-formats", "gui"]
-gui = ["eframe", "egui", "egui_dock", "egui_extras", "rfd", "custom-formats"]
+gui = ["eframe", "egui", "egui_dock", "egui_extras", "rfd", "image", "custom-formats"]
 custom-formats = []
 
 [lib]
