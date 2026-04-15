@@ -1,13 +1,3 @@
-
-
-
-
-
-
-
-
-
-
 use std::ffi::{CStr, CString};
 use std::os::raw::{c_char, c_double, c_int};
 use std::slice;
@@ -314,10 +304,10 @@ pub extern "C" fn layout_document(
             collect_rects_for_c(&root_box, &html_doc.nodes, &mut rects);
         }
     }
-
     let count = rects.len() as c_int;
     unsafe { *out_count = count; }
-    rects.leak().as_mut_ptr()
+    let boxed = rects.into_boxed_slice();
+    Box::into_raw(boxed) as *mut CLayoutRect
 }
 
 fn layout_box_recursive(box_: &mut LayoutBox, containing_block: Rect, ctx: &LayoutContext) {
@@ -370,11 +360,14 @@ pub extern "C" fn free_layout_results(rects: *mut CLayoutRect, count: c_int) {
         return;
     }
     unsafe {
-        let slice = slice::from_raw_parts_mut(rects, count as usize);
-        for rect in slice {
-            free_layout_rect(*rect);
+        let slice = std::slice::from_raw_parts_mut(rects, count as usize);
+        for rect in slice.iter_mut() {
+            if !rect.tag.is_null() {
+                let _ = CString::from_raw(rect.tag);
+            }
         }
-        let _ = Vec::from_raw_parts(rects, count as usize, count as usize);
+
+        let _ = Box::from_raw(slice);
     }
 }
 
