@@ -235,9 +235,9 @@ pub extern "C" fn compute_styles_for_document(
             CStyleProperty { property, value }
         }).collect();
 
-        
         let prop_count = props.len() as c_int;
-        let ptr = props.leak().as_mut_ptr();
+        let boxed_slice = props.into_boxed_slice();
+        let ptr = Box::into_raw(boxed_slice) as *mut CStyleProperty;
         c_styles.push(CElementStyle {
             properties: ptr,
             property_count: prop_count,
