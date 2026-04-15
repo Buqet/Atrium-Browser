@@ -1,5 +1,4 @@
-//! Atrium Browser - Chrome-like GUI with full HTML/CSS/Layout rendering
-
+// Это тестовый дизайн, нот файнл
 use eframe::egui;
 use egui_dock::{DockState, DockArea, TabViewer};
 use crate::{HtmlParser, CssParser, CssValue, Color as CssColor, LayoutBox, BoxType, LayoutContext, build_layout_tree};
@@ -638,7 +637,7 @@ impl eframe::App for AtriumApp {
                 }
             }
             
-            // Tab bar at top
+            
             ui.horizontal(|ui| {
                 ui.spacing_mut().item_spacing.x = 1.0;
                 let tabs: Vec<MyTab> = self.dock_state.main_surface().iter()
