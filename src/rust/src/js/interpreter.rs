@@ -1,8 +1,3 @@
-
-
-
-
-
 use std::collections::HashMap;
 use std::fmt;
 use std::rc::Rc;
@@ -384,14 +379,14 @@ impl JsInterpreter {
             crate::js::parser::JsNode::BlockStatement(stmts) => {
                 self.eval_block(stmts)
             }
-
-            crate::js::parser::JsNode::ReturnStatement(value) => {
-                if let Some(expr) = value {
-                    self.eval_node(expr)
-                } else {
-                    Ok(JsValue::Undefined)
-                }
-            }
+    crate::js::parser::JsNode::ReturnStatement(value) => {
+        let result = if let Some(expr) = value {
+            self.eval_node(expr)?
+        } else {
+            JsValue::Undefined
+        };
+        return Err(format!("__RETURN__{:?}", result));
+}
 
             crate::js::parser::JsNode::ArrayExpression(items) => {
                 let elements: Vec<JsValue> = items.iter()
