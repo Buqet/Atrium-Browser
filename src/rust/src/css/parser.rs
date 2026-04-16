@@ -1,8 +1,3 @@
-
-
-
-
-
 use std::borrow::Cow;
 use crate::css::value::{CssValue, Color, CssLength};
 use crate::css::selector::Selector;
@@ -16,13 +11,11 @@ pub struct Declaration {
     pub important: bool,
 }
 
-
 #[derive(Clone, Debug)]
 pub struct CssRule {
     pub selectors: Vec<Selector>,
     pub declarations: Vec<Declaration>,
 }
-
 
 #[derive(Clone, Debug)]
 pub struct MediaQuery {
@@ -31,7 +24,6 @@ pub struct MediaQuery {
     pub unit: String,
 }
 
-
 #[derive(Clone, Debug)]
 pub struct MediaRule {
     pub query: String,
@@ -39,20 +31,17 @@ pub struct MediaRule {
     pub rules: Vec<CssRule>,
 }
 
-
 #[derive(Clone, Debug)]
 pub struct KeyframeStep {
     pub offset: f32,
     pub declarations: Vec<Declaration>,
 }
 
-
 #[derive(Clone, Debug)]
 pub struct KeyframesRule {
     pub name: String,
     pub steps: Vec<KeyframeStep>,
 }
-
 
 #[derive(Clone, Debug)]
 pub struct CssTransition {
@@ -62,7 +51,6 @@ pub struct CssTransition {
     pub delay: f32,
 }
 
-
 #[derive(Clone, Debug)]
 pub struct ImportRule {
     pub url: String,
@@ -70,13 +58,11 @@ pub struct ImportRule {
     pub supports_query: Option<String>,
 }
 
-
 #[derive(Clone, Debug)]
 pub struct SupportsRule {
     pub condition: String,
     pub rules: Vec<CssRule>,
 }
-
 
 #[derive(Clone, Debug, Default)]
 pub struct Stylesheet {
@@ -87,7 +73,6 @@ pub struct Stylesheet {
     pub imports: Vec<ImportRule>,
     pub supports_rules: Vec<SupportsRule>,
 }
-
 
 #[derive(Error, Debug)]
 pub enum ParseError {
@@ -112,8 +97,6 @@ pub enum ParseError {
     #[error("Recursion depth exceeded at position {0}")]
     RecursionLimitExceeded(usize),
 }
-
-
 
 const MAX_RECURSION_DEPTH: usize = 128;
 
