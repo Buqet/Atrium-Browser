@@ -1,5 +1,3 @@
-
-
 use std::io::{self, Write};
 
 #[derive(Debug, Clone)]
