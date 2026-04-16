@@ -1,8 +1,3 @@
-
-
-
-
-
 use crate::html::HtmlNode;
 
 
@@ -16,9 +11,6 @@ pub struct ElementState {
 }
 
 
-
-
-
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Default)]
 pub struct Specificity {
     pub id_count: u32,
@@ -27,10 +19,6 @@ pub struct Specificity {
 }
 
 impl Specificity {
-    
-    
-    
-    
     pub fn calculate(selector: &Selector) -> Self {
         match selector {
             Selector::Universal => Self::default(),
