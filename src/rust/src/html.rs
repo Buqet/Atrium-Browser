@@ -1,7 +1,3 @@
-
-
-
-
 use std::collections::HashMap;
 use std::io::{self, Write};
 use log::{info, debug, warn};
@@ -253,120 +249,97 @@ impl HtmlParser {
     }
 
     fn parse_doctype(&mut self, chars: &[char], start: usize) -> Result<Option<(HtmlNode, usize)>, String> {
-        let mut pos = start;
+    let mut pos = start;
+    while pos < chars.len() && chars[pos].is_whitespace() {
+        pos += 1;
+    }
 
-        
-        while pos < chars.len() && chars[pos].is_whitespace() {
-            pos += 1;
-        }
+    let mut doctype_word = String::new();
+    while pos < chars.len() && !chars[pos].is_whitespace() && chars[pos] != '>' {
+        doctype_word.push(chars[pos]);
+        pos += 1;
+    }
 
-        
-        let mut name = String::new();
-        while pos < chars.len() && !chars[pos].is_whitespace() && chars[pos] != '>' {
-            name.push(chars[pos]);
-            pos += 1;
-        }
-
-        
-        while pos < chars.len() && chars[pos].is_whitespace() {
-            pos += 1;
-        }
-
-        
-        let mut public_id: Option<String> = None;
-        let mut system_id: Option<String> = None;
-
-        
-        let mut remaining = String::new();
+    if doctype_word.to_lowercase() != "doctype" {
         while pos < chars.len() && chars[pos] != '>' {
-            remaining.push(chars[pos]);
             pos += 1;
         }
         if pos < chars.len() {
-            pos += 1; 
+            pos += 1; // '>'
         }
-
-        let remaining_lower = remaining.to_lowercase();
-
-        
-        if remaining_lower.contains("public") {
-            
-            let quote_chars = ['"', '\''];
-            let mut quotes_found: Vec<String> = Vec::new();
-            let mut current_pos = 0;
-            let rem_chars: Vec<char> = remaining.chars().collect();
-
-            while current_pos < rem_chars.len() && quotes_found.len() < 2 {
-                if quote_chars.contains(&rem_chars[current_pos]) {
-                    let quote = rem_chars[current_pos];
-                    current_pos += 1;
-                    let mut s = String::new();
-                    while current_pos < rem_chars.len() && rem_chars[current_pos] != quote {
-                        s.push(rem_chars[current_pos]);
-                        current_pos += 1;
-                    }
-                    if current_pos < rem_chars.len() {
-                        current_pos += 1; 
-                    }
-                    quotes_found.push(s);
-                } else {
-                    current_pos += 1;
-                }
-            }
-
-            if quotes_found.len() >= 1 {
-                public_id = Some(quotes_found[0].clone());
-            }
-            if quotes_found.len() >= 2 {
-                system_id = Some(quotes_found[1].clone());
-            }
-        } else if remaining_lower.contains("system") {
-            
-            let quote_chars = ['"', '\''];
-            let rem_chars: Vec<char> = remaining.chars().collect();
-            for (i, &c) in rem_chars.iter().enumerate() {
-                if quote_chars.contains(&c) {
-                    let quote = c;
-                    let mut s = String::new();
-                    let mut j = i + 1;
-                    while j < rem_chars.len() && rem_chars[j] != quote {
-                        s.push(rem_chars[j]);
-                        j += 1;
-                    }
-                    system_id = Some(s);
-                    break;
-                }
-            }
-        }
-
-        let name_lower = name.to_lowercase();
-        if name_lower != "doctype" {
-            self.log_unsupported(format!("Unknown declaration: <!{}>", name));
-        }
-
-        
-        
-        let doctype_name = if public_id.is_some() || system_id.is_some() {
-            "html".to_string()
-        } else if name_lower == "doctype" {
-            
-            let trimmed = remaining.trim().to_lowercase();
-            if !trimmed.is_empty() && !trimmed.contains("public") && !trimmed.contains("system") {
-                
-                trimmed.split_whitespace().next().unwrap_or("").to_string()
-            } else {
-                String::new()
-            }
-        } else {
-            name.to_string()
-        };
-
-        Ok(Some((HtmlNode::Doctype {
-            name: doctype_name,
-            public_id,
-            system_id,
-        }, pos - start)))
+        Ok(Some((HtmlNode::Comment(format!("Invalid DOCTYPE: {}", doctype_word)), pos - start)));
     }
+ 
+    while pos < chars.len() && chars[pos].is_whitespace() {
+        pos += 1;
+    }
+
+    let mut doc_name = String::new();
+    while pos < chars.len() && !chars[pos].is_whitespace() && chars[pos] != '>' {
+        doc_name.push(chars[pos]);
+        pos += 1;
+    }
+
+    if doc_name.is_empty() {
+        doc_name = "html".to_string();
+   
+    while pos < chars.len() && chars[pos].is_whitespace() {
+        pos += 1;
+    }
+
+    let mut public_id = None;
+    let mut system_id = None;
+    let mut remaining = String::new();
+
+    while pos < chars.len() && chars[pos] != '>' {
+        remaining.push(chars[pos]);
+        pos += 1;
+    }
+    if pos < chars.len() {
+        pos += 1; // '>'
+    }
+
+    let remaining_lower = remaining.to_lowercase();
+    if remaining_lower.contains("public") || remaining_lower.contains("system") {
+        let quote_chars = ['"', '\''];
+        let mut quotes_found: Vec<String> = Vec::new();
+        let mut current_pos = 0;
+        let rem_chars: Vec<char> = remaining.chars().collect();
+        while current_pos < rem_chars.len() && quotes_found.len() < 2 {
+            if quote_chars.contains(&rem_chars[current_pos]) {
+                let quote = rem_chars[current_pos];
+                current_pos += 1;
+                let mut s = String::new();
+                while current_pos < rem_chars.len() && rem_chars[current_pos] != quote {
+                    s.push(rem_chars[current_pos]);
+                    current_pos += 1;
+                }
+                if current_pos < rem_chars.len() {
+                    current_pos += 1;
+                }
+                quotes_found.push(s);
+            } else {
+                current_pos += 1;
+            }
+        }
+        if !quotes_found.is_empty() {
+            if remaining_lower.contains("public") {
+                public_id = Some(quotes_found[0].clone());
+                if quotes_found.len() > 1 {
+                    system_id = Some(quotes_found[1].clone());
+                }
+            } else {
+                system_id = Some(quotes_found[0].clone());
+            }
+        }
+    }
+
+    Ok(Some((HtmlNode::Doctype {
+        name: doc_name,
+        public_id,
+        system_id,
+    }, pos - start)))
+}
 
     fn parse_element(&mut self, chars: &[char], start: usize, _parent_tag: &str, depth: usize) -> Result<Option<(HtmlNode, usize)>, String> {
         let mut pos = start;
