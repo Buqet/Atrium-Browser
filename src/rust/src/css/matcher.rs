@@ -1,8 +1,3 @@
-
-
-
-
-
 use std::collections::{HashMap, VecDeque};
 use std::hash::{Hash, Hasher};
 use std::sync::Arc;
@@ -14,10 +9,6 @@ use crate::css::selector::{Selector, ElementState, Specificity};
 use crate::css::parser::{CssRule, MediaRule, Stylesheet, Declaration};
 use crate::css::value::{CssValue, ViewportContext};
 use crate::css::properties::{is_inherited_property, inherit_properties, CustomProperties};
-
-
-
-
 
 
 #[derive(Clone, Debug)]
