@@ -1,14 +1,10 @@
-
-
-
-
 use atrium_core::WebHtmlParser;
 use std::env;
 use std::fs;
 use std::io::{self, Write, BufRead};
 
 fn main() {
-    println!("🔍 Atrium HTML Parser Test Tool");
+    println!("Atrium HTML Parser Test Tool");
     println!("═══════════════════════════════\n");
 
     let args: Vec<String> = env::args().collect();
