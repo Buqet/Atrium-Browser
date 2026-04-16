@@ -146,22 +146,38 @@ impl SourceList {
     }
 }
 
+#[derive(Error, Debug)]
+pub enum CorsError {
+    #[error("Origin '{0}' not allowed")]
+    OriginNotAllowed(String),
+    #[error("Method '{0}' not allowed")]
+    MethodNotAllowed(String),
+    #[error("Header '{0}' not allowed")]
+    HeaderNotAllowed(String),
+    #[error("Credentials cannot be used with wildcard origin")]
+    CredentialsWithWildcard,
+}
+
+
 pub struct CorsValidator {
     allowed_origins: HashSet<String>,
     allowed_methods: HashSet<String>,
     allowed_headers: HashSet<String>,
     allow_credentials: bool,
+    max_age: Option<u32>,
 }
 
 impl CorsValidator {
     pub fn new() -> Self {
-        CorsValidator {
+        Self {
             allowed_origins: HashSet::new(),
             allowed_methods: vec!["GET", "POST", "PUT", "DELETE", "OPTIONS"]
-                .iter().map(|s| s.to_string()).collect(),
+                .into_iter().map(String::from).collect(),
             allowed_headers: HashSet::new(),
             allow_credentials: false,
+            max_age: None,
         }
+
     }
 
     pub fn allowed_origins(mut self, origins: Vec<&str>) -> Self {
