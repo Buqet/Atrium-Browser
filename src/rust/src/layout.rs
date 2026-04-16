@@ -1,8 +1,3 @@
-
-
-
-
-
 use crate::css::value::{CssValue, ViewportContext, ComputedStyle};
 use crate::html::HtmlNode;
 use rustc_hash::FxHashMap;
