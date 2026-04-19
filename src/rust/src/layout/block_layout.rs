@@ -24,7 +24,7 @@ pub fn layout_block(box_: &mut LayoutBox, containing_block: Rect, ctx: &LayoutCo
     let mut margin_left = margin.left;
     let mut margin_right = margin.right;
     if available > 0.0 {
-        let ml_auto = margin.left < 0.0; // we use negative as marker for auto? Better to have explicit bool. For now keep as is.
+        let ml_auto = margin.left < 0.0;
         let mr_auto = margin.right < 0.0;
         match (ml_auto, mr_auto) {
             (true, true) => {
