@@ -560,31 +560,75 @@ impl CssParser {
         }
     }
 
-    fn parse_rule(&mut self) -> Result<Option<CssRule>, ParseError> {
-        let selectors = match self.parse_selectors() {
-            Some(s) => s,
-            None => return Ok(None),
-        };
+fn parse_rule(&mut self) -> Result<Vec<CssRule>, ParseError> {
+    let selectors = self.parse_selectors()
+        .ok_or_else(|| ParseError::InvalidSelector(self.pos))?;
+    self.skip_whitespace();
 
-        self.skip_whitespace();
-
-        if self.advance() != Some('{') {
-            
-            return self.recover_from_rule_error();
-        }
-
-        let declarations = self.parse_declarations();
-
-        self.skip_whitespace();
-        if self.advance() != Some('}') {
-            return Err(ParseError::ExpectedChar('}', self.pos));
-        }
-
-        Ok(Some(CssRule {
-            selectors,
-            declarations,
-        }))
+    if self.advance() != Some('{') {
+        return Err(ParseError::ExpectedChar('{', self.pos));
     }
+
+    let mut declarations = Vec::new();
+    let mut nested_rules: Vec<CssRule> = Vec::new();
+
+    while !self.is_eof() && self.peek() != Some('}') {
+        self.skip_whitespace();
+
+        if self.peek() == Some('}') {
+            break;
+        }
+
+        let start_pos = self.pos;
+        let maybe_selector = matches!(self.peek(), Some(c) if is_ident_start(c) || c == '.' || c == '#' || c == '*' || c == '[' || c == '&');
+        if maybe_selector {
+            let nested = self.parse_rule()?;
+            nested_rules.extend(nested);
+            continue;
+        }
+
+        if let Some(decl) = self.parse_declaration() {
+            for (prop, val) in crate::css::properties::expand_shorthand(&decl.property, &decl.value) {
+                declarations.push(Declaration {
+                    property: prop,
+                    value: val,
+                    important: decl.important,
+                });
+            }
+        } else {
+            self.recover_to(&[';', '}']);
+        }
+
+        self.skip_whitespace();
+        if self.peek() == Some(';') {
+            self.advance();
+        }
+    }
+
+    if self.advance() != Some('}') {
+        return Err(ParseError::ExpectedChar('}', self.pos));
+    }
+
+    let mut result = Vec::new();
+    result.push(CssRule {
+        selectors: selectors.clone(),
+        declarations,
+    });
+
+    for nested in nested_rules {
+        for nested_sel in &nested.selectors {
+            let combined_selectors: Vec<Selector> = selectors.iter()
+                .map(|parent_sel| combine_selectors(parent_sel, nested_sel))
+                .collect();
+            result.push(CssRule {
+                selectors: combined_selectors,
+                declarations: nested.declarations.clone(),
+            });
+        }
+    }
+
+    Ok(result)
+}
 
     
     fn recover_from_rule_error(&mut self) -> Result<Option<CssRule>, ParseError> {
