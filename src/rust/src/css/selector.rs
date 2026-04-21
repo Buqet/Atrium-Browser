@@ -1,6 +1,5 @@
 use crate::html::HtmlNode;
 
-
 #[derive(Clone, Debug, Default)]
 pub struct ElementState {
     pub hover: bool,
@@ -8,8 +7,7 @@ pub struct ElementState {
     pub active: bool,
     pub checked: bool,
     pub disabled: bool,
-}
-
+}
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Default)]
 pub struct Specificity {
@@ -80,11 +78,10 @@ impl Specificity {
 }
 
 
-
-
-
 #[derive(Clone, Debug)]
 pub enum Selector {
+
+    Ampersand,
     
     Universal,
     
