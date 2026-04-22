@@ -73,6 +73,7 @@ impl Specificity {
                 Self::calculate(inner)
             }
             Selector::NthChild(_, _) => Self { id_count: 0, class_count: 1, type_count: 0 },
+            Selector::Ampersand => Self::default(),
         }
     }
 }
