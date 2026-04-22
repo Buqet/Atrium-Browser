@@ -130,6 +130,7 @@ pub fn matches_selector(
                 false
             }
         }
+        Selector::Ampersand => false, 
         Selector::Attribute(name, value) => {
             if let HtmlNode::Element { attributes, .. } = node {
                 match value {
