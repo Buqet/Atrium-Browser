@@ -77,45 +77,24 @@ impl Specificity {
     }
 }
 
-
 #[derive(Clone, Debug)]
 pub enum Selector {
-
-    Ampersand,
-    
     Universal,
-    
     Type(String),
-    
     Class(String),
-    
     Id(String),
-    
-    
     Attribute(String, Option<(String, crate::css::matcher::AttributeMatchType)>),
-    
     Descendant(Box<Selector>, Box<Selector>),
-    
     Child(Box<Selector>, Box<Selector>),
-    
     Adjacent(Box<Selector>, Box<Selector>),
-    
     GeneralSibling(Box<Selector>, Box<Selector>),
-    
     PseudoClass(String),
-    
     PseudoElement(String),
-    
     Group(Vec<Selector>),
-    
     Not(Box<Selector>),
-    
-    NthChild(i32, i32), 
+    NthChild(i32, i32),
+    Ampersand,
 }
-
-
-
-
 
 pub fn matches_selector(
     selector: &Selector,
