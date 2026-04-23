@@ -66,7 +66,7 @@ impl CspPolicy {
         Ok(policy)
     }
 
-    pub fn allows(&self, resource_type: &str, url: &str) -> bool {
+    pub fn allows(&self, resource_type: &str, url: &str, nonce: Option<&str>, script_hash: Option<&str>) -> bool {
         let source_list = match resource_type {
             "script" => &self.script_src,
             "style" => &self.style_src,
@@ -78,8 +78,8 @@ impl CspPolicy {
             _ => &self.default_src,
         };
         match source_list {
-            Some(list) => list.allows(url),
-            None => self.default_src.as_ref().map_or(true, |list| list.allows(url))
+            Some(list) => list.allows(url, nonce, script_hash),
+            None => self.default_src.as_ref().map_or(true, |list| list.allows(url, nonce, script_hash))
         }
     }
 }
@@ -96,6 +96,9 @@ pub struct SourceList {
     pub allow_unsafe_inline: bool,
     pub allow_unsafe_eval: bool,
     pub allow_unsafe_hashes: bool,
+    pub allow_strict_dynamic: bool,
+    pub nonces: HashSet<String>,
+    pub hashes: HashSet<(String, String)>,
     pub wildcard: bool,
 }
 
@@ -108,6 +111,9 @@ impl SourceList {
             allow_unsafe_inline: false,
             allow_unsafe_eval: false,
             allow_unsafe_hashes: false,
+            allow_strict_dynamic: false,
+            nonces: HashSet::new(),
+            hashes: HashSet::new(),
             wildcard: false,
         };
         for value in values {
@@ -117,16 +123,47 @@ impl SourceList {
                 "'unsafe-inline'" => source_list.allow_unsafe_inline = true,
                 "'unsafe-eval'" => source_list.allow_unsafe_eval = true,
                 "'unsafe-hashes'" => source_list.allow_unsafe_hashes = true,
+                "'strict-dynamic'" => source_list.allow_strict_dynamic = true,
                 "*" => source_list.wildcard = true,
-                _ => { source_list.sources.insert(value.clone()); }
+                _ => {
+                    if value.starts_with("'nonce-") && value.ends_with('\'') {
+                        let nonce = value[7..value.len()-1].to_string();
+                        source_list.nonces.insert(nonce);
+                    } else if value.starts_with("'sha256-") && value.ends_with('\'') {
+                        let hash = value[8..value.len()-1].to_string();
+                        source_list.hashes.insert(("sha256".to_string(), hash));
+                    } else if value.starts_with("'sha384-") && value.ends_with('\'') {
+                        let hash = value[8..value.len()-1].to_string();
+                        source_list.hashes.insert(("sha384".to_string(), hash));
+                    } else if value.starts_with("'sha512-") && value.ends_with('\'') {
+                        let hash = value[8..value.len()-1].to_string();
+                        source_list.hashes.insert(("sha512".to_string(), hash));
+                    } else {
+                        source_list.sources.insert(value.clone());
+                    }
+                }
             }
         }
         source_list
     }
 
-    pub fn allows(&self, url: &str) -> bool {
+    pub fn allows(&self, url: &str, nonce: Option<&str>, script_hash: Option<&str>) -> bool {
         if self.allow_none { return false; }
-        if self.wildcard { return true; }
+        if self.wildcard && !self.allow_strict_dynamic { return true; }
+        if self.allow_self {
+            if let Ok(parsed) = url::Url::parse(url) {
+                if parsed.origin() == url::Url::parse("self://self").unwrap().origin() {
+                }
+            }
+        }
+        if let Some(n) = nonce {
+            if self.nonces.contains(n) { return true; }
+        }
+        if let Some(h) = script_hash {
+            for (_, hash_val) in &self.hashes {
+                if *hash_val == h { return true; }
+            }
+        }
         for source in &self.sources {
             if self.source_matches(source, url) { return true; }
         }
@@ -135,16 +172,28 @@ impl SourceList {
 
     fn source_matches(&self, source: &str, url: &str) -> bool {
         if source == url { return true; }
-        if source.starts_with("*.") {
-            let domain = &source[2..];
-            return url.contains(domain);
-        }
-        if source.ends_with('/') {
-            return url.starts_with(source);
+        if let Ok(parsed_url) = url::Url::parse(url) {
+            if source.starts_with("*.") {
+                let domain = &source[2..];
+                if let Some(host) = parsed_url.host_str() {
+                    return host == domain || host.ends_with(&format!(".{}", domain));
+                }
+            }
+            if source.ends_with('/') {
+                return url.starts_with(source);
+            }
+            if let Ok(source_url) = url::Url::parse(source) {
+                return parsed_url.scheme() == source_url.scheme()
+                    && parsed_url.host() == source_url.host()
+                    && parsed_url.port() == source_url.port()
+                    && parsed_url.path().starts_with(source_url.path());
+            }
         }
         false
     }
 }
+
+// Остальной код (CorsValidator, CertificateValidator) пока без изменений.
 
 #[derive(Error, Debug)]
 pub enum CorsError {
