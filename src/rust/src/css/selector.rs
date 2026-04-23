@@ -197,6 +197,7 @@ pub fn matches_selector(
                 false
             }
         }
+        Selector::Ampersand => false,
     }
 }
 
