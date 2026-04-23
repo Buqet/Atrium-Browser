@@ -66,7 +66,7 @@ impl CspPolicy {
         Ok(policy)
     }
 
-    pub fn allows(&self, resource_type: &str, url: &str, nonce: Option<&str>, script_hash: Option<&str>) -> bool {
+    pub fn allows(&self, resource_type: &str, url: &str, self_origin: Option<&str>, nonce: Option<&str>, script_hash: Option<&str>) -> bool {
         let source_list = match resource_type {
             "script" => &self.script_src,
             "style" => &self.style_src,
@@ -78,8 +78,8 @@ impl CspPolicy {
             _ => &self.default_src,
         };
         match source_list {
-            Some(list) => list.allows(url, nonce, script_hash),
-            None => self.default_src.as_ref().map_or(true, |list| list.allows(url, nonce, script_hash))
+            Some(list) => list.allows(url, self_origin, nonce, script_hash),
+            None => self.default_src.as_ref().map_or(true, |list| list.allows(url, self_origin, nonce, script_hash))
         }
     }
 }
@@ -147,12 +147,17 @@ impl SourceList {
         source_list
     }
 
-    pub fn allows(&self, url: &str, nonce: Option<&str>, script_hash: Option<&str>) -> bool {
+    pub fn allows(&self, url: &str, self_origin: Option<&str>, nonce: Option<&str>, script_hash: Option<&str>) -> bool {
         if self.allow_none { return false; }
         if self.wildcard && !self.allow_strict_dynamic { return true; }
         if self.allow_self {
-            if let Ok(parsed) = url::Url::parse(url) {
-                if parsed.origin() == url::Url::parse("self://self").unwrap().origin() {
+            if let Some(origin) = self_origin {
+                if let Ok(parsed) = url::Url::parse(url) {
+                    if let Ok(origin_url) = url::Url::parse(origin) {
+                        if parsed.origin() == origin_url.origin() {
+                            return true;
+                        }
+                    }
                 }
             }
         }
@@ -305,8 +310,16 @@ mod tests {
     fn test_csp_allows() {
         let header = "default-src *";
         let policy = CspPolicy::parse(header).unwrap();
-        assert!(policy.allows("script", "https://example.com"));
-        assert!(policy.allows("script", "https://cdn.example.com"));
+        assert!(policy.allows("script", "https://example.com", None, None, None));
+        assert!(policy.allows("script", "https://cdn.example.com", None, None, None));
+    }
+
+    #[test]
+    fn test_csp_self_origin() {
+        let header = "default-src 'self'";
+        let policy = CspPolicy::parse(header).unwrap();
+        assert!(policy.allows("script", "https://mysite.com/static/app.js", Some("https://mysite.com"), None, None));
+        assert!(!policy.allows("script", "https://other.com/app.js", Some("https://mysite.com"), None, None));
     }
 
     #[test]
