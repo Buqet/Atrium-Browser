@@ -193,8 +193,6 @@ impl SourceList {
     }
 }
 
-// Остальной код (CorsValidator, CertificateValidator) пока без изменений.
-
 #[derive(Error, Debug)]
 pub enum CorsError {
     #[error("Origin '{0}' not allowed")]
